@@ -1,11 +1,11 @@
 # Project RUGGUARD Twitter Bot
 
-A Twitter bot that analyzes account trustworthiness when triggered by the phrase "@projectruggaurd riddle me this" in a reply. The bot is specifically designed for the Solana ecosystem to help users assess the trustworthiness of token projects and accounts.
+A Twitter bot that analyzes account trustworthiness when triggered by the phrase "@projectrugguard riddle me this" in a reply. The bot is specifically designed for the Solana ecosystem to help users assess the trustworthiness of token projects and accounts.
 
 ## How It Works
 
 ### Trigger Mechanism
-1. The bot monitors Twitter for replies containing "@projectruggaurd riddle me this"
+1. The bot monitors Twitter for replies containing "@projectrugguard riddle me this"
 2. When found, it identifies the original tweet being replied to
 3. The bot then analyzes the original tweet's author (not the person who replied)
 
@@ -85,14 +85,14 @@ The bot generates a detailed trust report including:
 
 4. Run the bot:
    ```bash
-   python main.py
+   python rugguard_bot.py
    ```
 
 ## Project Structure
 
 ```
 project-rugguard-bot/
-├── ruggard_bot.py       # Main bot logic and entry point
+├── rugguard_bot.py      # Main bot logic and entry point
 ├── tweet_monitor.py     # Twitter stream monitoring
 ├── account_analyzer.py  # Account analysis logic
 ├── trust_verifier.py    # Trust verification system
@@ -103,16 +103,19 @@ project-rugguard-bot/
 
 ### Key Components
 
-1. **ruggard_bot.py**
+1. **rugguard_bot.py**
    - Initializes Twitter API client
    - Manages environment variables
    - Coordinates bot components
    - Handles rate limiting and errors
+   - Provides detailed timing logs for operations
 
 2. **tweet_monitor.py**
    - Monitors Twitter for trigger phrases
    - Identifies original tweet authors
    - Manages tweet stream processing
+   - Implements sophisticated rate limit handling
+   - Maintains minimum API call intervals
 
 3. **account_analyzer.py**
    - Performs comprehensive account analysis
@@ -152,11 +155,22 @@ The bot includes robust error handling for:
 
 ## Rate Limiting
 
-The bot automatically handles Twitter API rate limits by:
-- Implementing exponential backoff
-- Respecting API quotas
-- Queueing requests when necessary
-- Providing clear error messages
+The bot implements sophisticated rate limit handling:
+- Minimum 2-second interval between API calls
+- Exponential backoff (starting at 60 seconds, max 15 minutes)
+- Automatic rate limit detection and handling
+- Random delays (2-5 seconds) between tweet processing
+- Twitter API v2 requirements compliance (minimum 10 tweets per request)
+- Detailed timing logs for monitoring performance
+
+## Operation Timing
+
+The bot provides detailed timing logs for each operation:
+- Trigger tweet detection
+- Account analysis start
+- Trust verification
+- Report generation and posting
+- Rate limit handling and delays
 
 ## Contributing
 
