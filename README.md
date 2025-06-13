@@ -63,6 +63,7 @@ The bot generates a detailed trust report including:
 
 ### Installation
 
+#### Local Setup
 1. Clone the repository:
    ```bash
    git clone <repository-url>
@@ -87,6 +88,28 @@ The bot generates a detailed trust report including:
    ```bash
    python rugguard_bot.py
    ```
+
+#### Replit Setup
+1. Fork this repository to your GitHub account
+2. Create a new Replit project
+3. Choose "Import from GitHub" and select your forked repository
+4. In Replit's "Secrets" tab, add your Twitter API credentials:
+   - `API_KEY`
+   - `API_SECRET`
+   - `ACCESS_TOKEN`
+   - `ACCESS_TOKEN_SECRET`
+   - `BEARER_TOKEN`
+5. Click "Run" to start the bot
+
+### Getting Twitter API Credentials
+1. Go to [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard)
+2. Create a new project and app
+3. Enable Twitter API v2 access
+4. Generate the required credentials:
+   - API Key and Secret
+   - Access Token and Secret
+   - Bearer Token
+5. Copy these credentials to your `.env` file or Replit Secrets
 
 ## Project Structure
 
@@ -171,6 +194,12 @@ The bot provides detailed timing logs for each operation:
 - Trust verification
 - Report generation and posting
 - Rate limit handling and delays
+
+## Dependencies
+This project uses the following open-source libraries:
+- tweepy (Twitter API client)
+- python-dotenv (Environment variable management)
+- requests (HTTP client)
 
 ## Contributing
 
