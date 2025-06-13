@@ -2,51 +2,86 @@
 import tweepy
 from typing import List, Dict, Any
 from datetime import datetime
+import requests
+import time
+from requests.exceptions import RequestException
 
 class TrustVerifier:
     def __init__(self, client: tweepy.Client):
         self.client = client
-        self.trusted_accounts = TRUSTED_ACCOUNTS
+        self.trusted_accounts = []
+        self._load_trusted_accounts()
+
+    def _load_trusted_accounts(self, max_retries: int = 3) -> None:
+        """
+        Load trusted accounts from GitHub with retry mechanism
+        """
+        retry_count = 0
+        while retry_count < max_retries:
+            try:
+                url = "https://raw.githubusercontent.com/devsyrem/turst-list/main/list"
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+                
+                # Split by newlines and filter out empty lines
+                self.trusted_accounts = [line.strip() for line in response.text.split('\n') if line.strip()]
+                
+                if not self.trusted_accounts:
+                    raise ValueError("No trusted accounts loaded from GitHub")
+                
+                print(f"Successfully loaded {len(self.trusted_accounts)} trusted accounts")
+                return
+                
+            except RequestException as e:
+                retry_count += 1
+                if retry_count == max_retries:
+                    print(f"Failed to load trusted accounts after {max_retries} attempts: {e}")
+                    self.trusted_accounts = []
+                    return
+                print(f"Attempt {retry_count} failed, retrying in 5 seconds...")
+                time.sleep(5)
+            except Exception as e:
+                print(f"Unexpected error loading trusted accounts: {e}")
+                self.trusted_accounts = []
+                return
 
     def is_vouched(self, user_id: str) -> Dict:
         """
-        Check if a user is followed by trusted accounts
+        Check if a user is followed by at least 2 trusted accounts
         Returns a dictionary with vouch status and details
         """
+        if not self.trusted_accounts:
+            return {
+                "vouched": False,
+                "vouch_count": 0,
+                "trusted_followers": [],
+                "error": "Trusted accounts list not loaded"
+            }
+
         try:
-            # Get followers with comprehensive information
+            # Get the user's followers with rate limit handling
             followers = self.client.get_users_followers(
                 user_id,
-                max_results=1000,
-                user_fields=[
-                    "created_at",
-                    "description",
-                    "entities",
-                    "location",
-                    "name",
-                    "pinned_tweet_id",
-                    "profile_image_url",
-                    "protected",
-                    "public_metrics",
-                    "url",
-                    "username",
-                    "verified"
-                ],
-                expansions=["pinned_tweet_id"]
+                max_results=10,  # Minimum reasonable number
+                user_fields=['username', 'verified']
             )
             
             if not followers.data:
                 return {
                     "vouched": False,
                     "vouch_count": 0,
-                    "trusted_followers": []
+                    "trusted_followers": [],
+                    "error": "No followers found"
                 }
             
             # Check which trusted accounts follow this user
             trusted_followers = []
             for follower in followers.data:
                 if follower.username in self.trusted_accounts:
-                    trusted_followers.append(follower.username)
+                    trusted_followers.append({
+                        "username": follower.username,
+                        "verified": follower.verified
+                    })
             
             vouch_count = len(trusted_followers)
             is_vouched = vouch_count >= 2  # Vouched if followed by at least 2 trusted accounts
@@ -54,15 +89,34 @@ class TrustVerifier:
             return {
                 "vouched": is_vouched,
                 "vouch_count": vouch_count,
-                "trusted_followers": trusted_followers
+                "trusted_followers": trusted_followers,
+                "error": None
             }
             
+        except tweepy.errors.TooManyRequests as e:
+            print(f"Rate limit exceeded. Waiting for {e.reset_time} seconds...")
+            time.sleep(e.reset_time)
+            return {
+                "vouched": False,
+                "vouch_count": 0,
+                "trusted_followers": [],
+                "error": f"Rate limit exceeded. Try again in {e.reset_time} seconds"
+            }
+        except tweepy.errors.TwitterServerError as e:
+            print(f"Twitter server error: {e}")
+            return {
+                "vouched": False,
+                "vouch_count": 0,
+                "trusted_followers": [],
+                "error": "Twitter server error. Please try again later"
+            }
         except Exception as e:
             print(f"Error checking vouch status: {e}")
             return {
                 "vouched": False,
                 "vouch_count": 0,
-                "trusted_followers": []
+                "trusted_followers": [],
+                "error": f"Unexpected error: {str(e)}"
             }
 
     def listen_for_trigger(self) -> List[tweepy.Tweet]:

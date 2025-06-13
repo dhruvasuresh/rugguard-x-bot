@@ -7,6 +7,7 @@ from tweet_monitor import TweetMonitor
 from account_analyzer import AccountAnalyzer
 from trust_verifier import TrustVerifier
 from report_generator import ReportGenerator
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -71,22 +72,28 @@ def main():
             # Listen for replies mentioning @projectruggaurd with the phrase
             tweets = tweet_monitor.listen_for_trigger()
             for tweet in tweets:
+                print(f"\n[{datetime.now()}] Processing new trigger tweet...")
+                
                 # Extract original tweet and author
                 original_author_id = tweet_monitor.get_original_author_id(tweet)
                 if not original_author_id:
                     continue
 
+                print(f"[{datetime.now()}] Starting account analysis...")
                 # Analyze the original author
                 analysis = account_analyzer.analyze_user(original_author_id)
                 
+                print(f"[{datetime.now()}] Checking trusted account relationships...")
                 # Check if vouched by trusted accounts
                 vouched = trust_verifier.is_vouched(original_author_id)
                 analysis["vouched"] = vouched["vouched"]
                 analysis["vouch_count"] = vouched["vouch_count"]
                 analysis["trusted_followers"] = vouched["trusted_followers"]
 
+                print(f"[{datetime.now()}] Generating and posting report...")
                 # Reply with the trustworthiness report
                 report_generator.reply_with_report(tweet.id, analysis)
+                print(f"[{datetime.now()}] Report posted successfully\n")
                 
         except tweepy.errors.TooManyRequests as e:
             print(f"Rate limit exceeded. Waiting for {e.reset_time} seconds...")
